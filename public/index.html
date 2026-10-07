@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeekMonster — AI-Native Security Engineering</title>
+<meta name="description" content="GeekMonster builds AI agent pipelines for Solidity audits, AI-generated code review, and post-quantum readiness — every finding backed by reproducible evidence, not model output alone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0713;
+    --bg-raised:#120d1e;
+    --bg-card:#150f24;
+    --line:#241a3a;
+    --ink:#f2eefb;
+    --ink-dim:#a79ec4;
+    --ink-faint:#6f6690;
+    --violet:#8b6cf2;
+    --violet-soft:#a78bfa;
+    --violet-deep:#4c1d95;
+    --lavender:#c4b5fd;
+    --green:#4ade80;
+    --green-deep:#1f7a45;
+    --radius:14px;
+    --wrap:1120px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    font-weight:600;
+    line-height:1.12;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{color:inherit;}
+  img,svg{display:block;max-width:100%;}
+  .wrap{max-width:var(--wrap); margin:0 auto; padding:0 28px;}
+  section{position:relative;}
+
+  /* background texture: faint shield-gradient glow, fixed */
+  .glow{
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(600px 420px at 82% -6%, rgba(139,108,242,0.16), transparent 60%),
+      radial-gradient(560px 420px at 8% 18%, rgba(74,222,128,0.08), transparent 60%);
+  }
+
+  /* ---------- NAV ---------- */
+  .nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,7,19,0.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid transparent;
+    transition:border-color .25s ease, background .25s ease;
+  }
+  .nav.scrolled{ border-color:var(--line); }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; max-width:var(--wrap); margin:0 auto;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .brand svg{ width:26px; height:34px; }
+  .brand-name{ font-family:'Space Grotesk'; font-weight:700; font-size:16px; letter-spacing:0.01em; }
+  .nav-links{ display:flex; gap:30px; list-style:none; margin:0; padding:0; }
+  .nav-links a{
+    text-decoration:none; color:var(--ink-dim); font-size:14px; font-weight:500;
+    transition:color .2s ease;
+  }
+  .nav-links a:hover{ color:var(--ink); }
+  .nav-cta{
+    font-size:13.5px; font-weight:600; padding:9px 18px; border-radius:999px;
+    background:linear-gradient(100deg, var(--violet-soft), var(--green));
+    color:#0a0713; text-decoration:none; white-space:nowrap;
+  }
+  .nav-mobile-hide{ display:flex; align-items:center; gap:28px; }
+  @media (max-width:760px){
+    .nav-links{ display:none; }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{ padding:96px 0 88px; }
+  .hero-inner{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .hero-mark{ width:64px; height:84px; margin-bottom:28px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono'; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--green); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before, .eyebrow::after{ content:""; width:22px; height:1px; background:var(--green); opacity:.5; }
+  .hero h1{
+    font-size:clamp(34px, 5.4vw, 60px);
+    max-width:820px;
+    background:linear-gradient(100deg, var(--ink) 20%, var(--lavender) 55%, var(--green) 92%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.lede{
+    margin:26px 0 0; max-width:600px; color:var(--ink-dim); font-size:17.5px; line-height:1.65;
+  }
+  .hero-ctas{ display:flex; gap:14px; margin-top:38px; flex-wrap:wrap; justify-content:center; }
+  .btn{
+    font-family:'IBM Plex Sans'; font-weight:600; font-size:14.5px;
+    padding:13px 24px; border-radius:10px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px; transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary{
+    background:linear-gradient(100deg, var(--violet-soft), var(--green));
+    color:#0a0713;
+  }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 10px 30px -12px rgba(139,108,242,0.55); }
+  .btn-ghost{
+    border:1px solid var(--line); color:var(--ink);
+  }
+  .btn-ghost:hover{ border-color:var(--violet-soft); }
+  .hero-trust{
+    margin-top:56px; display:flex; gap:34px; flex-wrap:wrap; justify-content:center;
+    font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em;
+  }
+
+  /* ---------- SECTION HEADS ---------- */
+  .section-pad{ padding:88px 0; border-top:1px solid var(--line); }
+  .section-head{ max-width:640px; margin-bottom:52px; }
+  .section-head .eyebrow{ justify-content:flex-start; margin-bottom:14px; }
+  .section-head .eyebrow::after{ display:none; }
+  .section-head h2{ font-size:clamp(26px,3.2vw,36px); }
+  .section-head p{ color:var(--ink-dim); margin-top:14px; font-size:15.5px; max-width:560px; }
+
+  /* ---------- WHO WE SERVE ---------- */
+  .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .who-card{ background:var(--bg-card); padding:28px 24px; }
+  .who-card .tag{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--green); letter-spacing:.06em; text-transform:uppercase; }
+  .who-card h3{ font-size:17px; margin-top:12px; font-weight:600; }
+  .who-card p{ color:var(--ink-dim); font-size:14px; margin-top:10px; }
+  @media (max-width:900px){ .grid-4{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px){ .grid-4{ grid-template-columns:1fr; } }
+
+  /* ---------- MVP CARDS ---------- */
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  @media (max-width:800px){ .grid-2{ grid-template-columns:1fr; } }
+  .mvp-card{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:32px; position:relative; overflow:hidden;
+  }
+  .mvp-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--violet-soft), var(--green));
+  }
+  .mvp-num{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-faint); }
+  .mvp-card h3{ font-size:21px; margin-top:10px; }
+  .mvp-io{ margin-top:18px; font-size:13.5px; }
+  .mvp-io b{ color:var(--lavender); font-weight:600; font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  .mvp-io p{ color:var(--ink-dim); margin:4px 0 0; }
+  .mvp-list{ list-style:none; margin:20px 0 0; padding:0; display:grid; gap:9px; }
+  .mvp-list li{ font-size:14px; color:var(--ink-dim); padding-left:20px; position:relative; }
+  .mvp-list li::before{
+    content:""; position:absolute; left:0; top:7px; width:8px; height:8px; border-radius:2px;
+    background:linear-gradient(135deg, var(--violet-soft), var(--green));
+  }
+
+  /* ---------- EVIDENCE CHAIN (signature element) ---------- */
+  .chain-wrap{ overflow-x:auto; padding-bottom:8px; margin:0 -28px; padding-left:28px; padding-right:28px; }
+  .chain{ display:flex; gap:0; min-width:920px; position:relative; }
+  .chain-node{
+    flex:1; position:relative; padding:0 18px 0 0;
+  }
+  .chain-node:last-child{ padding-right:0; }
+  .chain-line{
+    position:absolute; top:15px; left:0; right:0; height:2px; z-index:0;
+    background:linear-gradient(90deg, var(--violet-soft), var(--green));
+    opacity:.35;
+  }
+  .chain-dot{
+    width:32px; height:32px; border-radius:50%; position:relative; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono'; font-size:12px; font-weight:500;
+    border:2px solid var(--line); background:var(--bg);
+    color:var(--ink-dim); transition:border-color .2s ease, color .2s ease, box-shadow .2s ease;
+  }
+  .chain-node:nth-child(1) .chain-dot{ --stop:0; }
+  .chain-node:nth-child(2) .chain-dot{ --stop:1; }
+  .chain-node:nth-child(3) .chain-dot{ --stop:2; }
+  .chain-node:nth-child(4) .chain-dot{ --stop:3; }
+  .chain-node:nth-child(5) .chain-dot{ --stop:4; }
+  .chain-node:nth-child(6) .chain-dot{ --stop:5; }
+  .chain-node:hover .chain-dot{
+    border-color:var(--green); color:var(--green);
+    box-shadow:0 0 0 5px rgba(74,222,128,0.12);
+  }
+  .chain-label{ font-family:'IBM Plex Mono'; font-size:12.5px; font-weight:500; margin-top:18px; color:var(--ink); letter-spacing:.02em; }
+  .chain-desc{ font-size:13.5px; color:var(--ink-dim); margin-top:8px; max-width:190px; line-height:1.55; }
+  .chain-verdict{
+    margin-top:56px; padding:18px 22px; border:1px dashed var(--line); border-radius:10px;
+    font-family:'IBM Plex Mono'; font-size:13px; color:var(--ink-dim); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;
+  }
+  .chain-verdict .v{ padding:2px 9px; border-radius:5px; font-size:11.5px; letter-spacing:.04em; }
+  .v-verified{ background:rgba(74,222,128,0.14); color:var(--green); }
+  .v-likely{ background:rgba(139,108,242,0.16); color:var(--violet-soft); }
+  .v-suspected{ background:rgba(196,181,253,0.1); color:var(--lavender); }
+  .v-false{ background:rgba(167,158,196,0.1); color:var(--ink-faint); }
+
+  /* ---------- ROADMAP TABLE ---------- */
+  .roadmap{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .roadmap-row{ display:grid; grid-template-columns:64px 1.3fr 1fr 1.4fr; background:var(--bg-card); }
+  .roadmap-row.head{ background:var(--bg-raised); }
+  .roadmap-row.head .rc{ font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); }
+  .rc{ padding:20px 20px; font-size:14px; color:var(--ink-dim); display:flex; flex-direction:column; justify-content:center; }
+  .roadmap-row .num{
+    font-family:'IBM Plex Mono'; font-size:15px; color:var(--green);
+    display:flex; align-items:center; justify-content:center; border-right:1px solid var(--line);
+  }
+  .rc strong{ color:var(--ink); font-weight:600; font-size:14.5px; }
+  @media (max-width:760px){
+    .roadmap-row{ grid-template-columns:44px 1fr; }
+    .roadmap-row .rc:nth-child(3),.roadmap-row .rc:nth-child(4){ grid-column:2; border-top:1px solid var(--line); }
+  }
+
+  /* ---------- HONESTY / HARD PARTS ---------- */
+  .hard-list{ list-style:none; margin:0; padding:0; display:grid; gap:0; border-top:1px solid var(--line); }
+  .hard-list li{ padding:22px 0; border-bottom:1px solid var(--line); display:flex; gap:20px; }
+  .hard-list .mark{ font-family:'IBM Plex Mono'; color:var(--violet-soft); font-size:13px; flex-shrink:0; padding-top:2px; }
+  .hard-list p{ margin:0; color:var(--ink-dim); font-size:14.5px; line-height:1.6; }
+
+  /* ---------- FOOTER / CTA ---------- */
+  .cta-band{
+    border-top:1px solid var(--line);
+    padding:96px 0;
+    text-align:center;
+  }
+  .cta-band h2{ font-size:clamp(26px,4vw,40px); max-width:620px; margin:0 auto; }
+  .cta-band p{ color:var(--ink-dim); margin:18px auto 0; max-width:460px; font-size:15.5px; }
+  .cta-band .hero-ctas{ margin-top:34px; }
+
+  footer{ border-top:1px solid var(--line); padding:40px 0; }
+  .footer-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-inner .brand svg{ width:20px; height:26px; }
+  footer .fine{ font-size:12.5px; color:var(--ink-faint); font-family:'IBM Plex Mono'; }
+
+  [data-reveal]{ opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease; }
+  [data-reveal].in{ opacity:1; transform:none; }
+  @media (prefers-reduced-motion: reduce){
+    [data-reveal]{ opacity:1; transform:none; transition:none; }
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <svg viewBox="44 15 176 222" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="navGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#A78BFA"/>
+            <stop offset="1" stop-color="#4ADE80"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#navGrad)" d="M 131.25 30 L 208.5 54 L 208.5 114 C 208.5 174 172.5 207 131.25 226.5 C 90 207 54 174 54 114 L 54 54 Z"/>
+        <path fill="none" stroke-width="2.25" stroke="#C4B5FD" d="M 131.25 30 L 208.5 54 L 208.5 114 C 208.5 174 172.5 207 131.25 226.5 C 90 207 54 174 54 114 L 54 54 Z"/>
+        <path fill="#0B071A" d="M 158.25 111 C 158.25 125.910156 146.160156 138 131.25 138 C 116.339844 138 104.25 125.910156 104.25 111 C 104.25 96.089844 116.339844 84 131.25 84 C 146.160156 84 158.25 96.089844 158.25 111 Z"/>
+        <path fill="#4ADE80" d="M 150 111 C 150 121.355469 141.605469 129.75 131.25 129.75 C 120.894531 129.75 112.5 121.355469 112.5 111 C 112.5 100.644531 120.894531 92.25 131.25 92.25 C 141.605469 92.25 150 100.644531 150 111 Z"/>
+      </svg>
+      <span class="brand-name">GeekMonster</span>
+    </a>
+    <div class="nav-mobile-hide">
+      <ul class="nav-links">
+        <li><a href="#who">Who we serve</a></li>
+        <li><a href="#what">What we do</a></li>
+        <li><a href="#method">Method</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="/scan.html">Free scan</a></li>
+      </ul>
+      <a class="nav-cta" href="#contact">Start an engagement</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="wrap hero-inner">
+    <svg class="hero-mark" viewBox="44 15 176 222" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#A78BFA"/>
+          <stop offset="0.55" stop-color="#8B6CF2"/>
+          <stop offset="1" stop-color="#4ADE80"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#heroGrad)" d="M 131.25 30 L 208.5 54 L 208.5 114 C 208.5 174 172.5 207 131.25 226.5 C 90 207 54 174 54 114 L 54 54 Z"/>
+      <path fill="none" stroke-width="2.25" stroke="#C4B5FD" d="M 131.25 30 L 208.5 54 L 208.5 114 C 208.5 174 172.5 207 131.25 226.5 C 90 207 54 174 54 114 L 54 54 Z"/>
+      <path fill="#4C1D95" d="M 88.5 51 L 78 25.5 L 100.5 42 Z"/>
+      <path fill="#4C1D95" d="M 174 51 L 184.5 25.5 L 162 42 Z"/>
+      <path fill="#0B071A" d="M 158.25 111 C 158.25 125.910156 146.160156 138 131.25 138 C 116.339844 138 104.25 125.910156 104.25 111 C 104.25 96.089844 116.339844 84 131.25 84 C 146.160156 84 158.25 96.089844 158.25 111 Z"/>
+      <path fill="#4ADE80" d="M 150 111 C 150 121.355469 141.605469 129.75 131.25 129.75 C 120.894531 129.75 112.5 121.355469 112.5 111 C 112.5 100.644531 120.894531 92.25 131.25 92.25 C 141.605469 92.25 150 100.644531 150 111 Z"/>
+      <path fill="#0B071A" d="M 138.75 111 C 138.75 115.140625 135.390625 118.5 131.25 118.5 C 127.109375 118.5 123.75 115.140625 123.75 111 C 123.75 106.859375 127.109375 103.5 131.25 103.5 C 135.390625 103.5 138.75 106.859375 138.75 111 Z"/>
+      <path fill="#FFFFFF" d="M 101.25 156 L 109.5 178.5 L 117.75 156 Z"/>
+      <path fill="#FFFFFF" d="M 144.75 156 L 153 178.5 L 161.25 156 Z"/>
+    </svg>
+
+    <p class="eyebrow">AI-native security engineering</p>
+    <h1>We don't report vulnerabilities.<br>We prove them.</h1>
+    <p class="lede">GeekMonster runs agent pipelines — recon, code analysis, exploit, verification, remediation — the way a real security team works: every claim gets challenged and tested before it reaches you. A human engineer signs every report.</p>
+
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="#contact">Start an engagement →</a>
+      <a class="btn btn-ghost" href="#method">See the evidence chain</a>
+    </div>
+
+    <div class="hero-trust">
+      <span>Solidity &amp; EVM audits</span>
+      <span>AI-generated code review</span>
+      <span>Post-quantum readiness</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ WHO WE SERVE ============ -->
+<section class="section-pad" id="who">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Who we serve</p>
+      <h2>Built for teams shipping faster than they can review.</h2>
+      <p>Four kinds of teams end up needing us — usually right after AI wrote the code, or right before a signature needs to outlive the algorithm that made it.</p>
+    </div>
+
+    <div class="grid-4" data-reveal>
+      <div class="who-card">
+        <p class="tag">Web3 / DeFi</p>
+        <h3>Protocol teams shipping Solidity</h3>
+        <p>Audits faster than traditional firms deliver, backed by proof-of-exploit evidence instead of a PDF of guesses.</p>
+      </div>
+      <div class="who-card">
+        <p class="tag">AI-assisted dev teams</p>
+        <h3>Copilot / Claude / Cursor workflows</h3>
+        <p>A security layer that reviews AI-generated code before it merges — not after it ships.</p>
+      </div>
+      <div class="who-card">
+        <p class="tag">Enterprise &amp; foundations</p>
+        <h3>Long-lived sensitive data or signatures</h3>
+        <p>A Harvest-Now-Decrypt-Later risk assessment and a practical PQC migration roadmap.</p>
+      </div>
+      <div class="who-card">
+        <p class="tag">New DApp builders</p>
+        <h3>Products not yet in production</h3>
+        <p>Built secure and post-quantum-ready from day one, instead of retrofitted later at higher cost.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT WE SELL ============ -->
+<section class="section-pad" id="what">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">What we do — today</p>
+      <h2>Two engagements. Real deliverables. No self-serve dashboard.</h2>
+      <p>The agent pipeline does the heavy lifting. A human security engineer reviews and signs every report before it reaches you.</p>
+    </div>
+
+    <div class="grid-2" data-reveal>
+      <div class="mvp-card">
+        <p class="mvp-num">MVP — 01</p>
+        <h3>Smart Contract Security Review</h3>
+        <div class="mvp-io">
+          <b>Input</b>
+          <p>A GitHub repo of Solidity contracts.</p>
+        </div>
+        <ul class="mvp-list">
+          <li>Architecture map &amp; attack-surface inventory</li>
+          <li>Findings scored and explained by severity</li>
+          <li>Reproducible proof-of-concept exploits, run on Foundry</li>
+          <li>Tested remediation, not just recommendations</li>
+        </ul>
+      </div>
+      <div class="mvp-card">
+        <p class="mvp-num">MVP — 02</p>
+        <h3>PQC Readiness Assessment</h3>
+        <div class="mvp-io">
+          <b>Input</b>
+          <p>Your organization's codebase and infrastructure.</p>
+        </div>
+        <ul class="mvp-list">
+          <li>Cryptographic asset inventory</li>
+          <li>Quantum exposure &amp; Harvest-Now-Decrypt-Later analysis</li>
+          <li>Crypto-agility score</li>
+          <li>Prioritized hybrid-migration roadmap — not just "swap ECDSA for ML-DSA"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EVIDENCE CHAIN ============ -->
+<section class="section-pad" id="method">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">How it works</p>
+      <h2>The evidence chain.</h2>
+      <p>Whether run by hand today or by tooling later, every engagement walks the same six stages end to end. Nothing reaches a client deliverable if it skips a link.</p>
+    </div>
+
+    <div class="chain-wrap" data-reveal>
+      <div class="chain">
+        <div class="chain-line"></div>
+        <div class="chain-node">
+          <div class="chain-dot">01</div>
+          <p class="chain-label">Recon</p>
+          <p class="chain-desc">Map the repo — contracts, dependencies, inheritance, access control, upgradeability.</p>
+        </div>
+        <div class="chain-node">
+          <div class="chain-dot">02</div>
+          <p class="chain-label">Hunt</p>
+          <p class="chain-desc">Static analysis + AST + LLM reasoning flag candidates. The model is never the sole source of truth.</p>
+        </div>
+        <div class="chain-node">
+          <div class="chain-dot">03</div>
+          <p class="chain-label">Exploit</p>
+          <p class="chain-desc">A Foundry PoC executed against an isolated Anvil fork. Detection ≠ confirmation.</p>
+        </div>
+        <div class="chain-node">
+          <div class="chain-dot">04</div>
+          <p class="chain-label">Verify</p>
+          <p class="chain-desc">Adversarial review classifies each candidate — and preserves the evidence either way.</p>
+        </div>
+        <div class="chain-node">
+          <div class="chain-dot">05</div>
+          <p class="chain-label">Score</p>
+          <p class="chain-desc">Exploitability, funds at risk, and blast radius — scored and explained, not asserted.</p>
+        </div>
+        <div class="chain-node">
+          <div class="chain-dot">06</div>
+          <p class="chain-label">Remediate</p>
+          <p class="chain-desc">A patch, shown as a diff, retested against the original exploit and the full test suite.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chain-verdict" data-reveal>
+      <span>Every finding is classified:</span>
+      <span class="v v-verified">VERIFIED</span>
+      <span class="v v-likely">LIKELY</span>
+      <span class="v v-suspected">SUSPECTED</span>
+      <span class="v v-false">FALSE POSITIVE</span>
+      <span>— never asserted on model output alone.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="section-pad" id="roadmap">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Where the revenue goes</p>
+      <h2>Each phase funds and de-risks the next.</h2>
+      <p>Nothing here is built ahead of the judgment it depends on.</p>
+    </div>
+
+    <div class="roadmap" data-reveal>
+      <div class="roadmap-row head">
+        <div class="rc"></div>
+        <div class="rc">Phase</div>
+        <div class="rc">Model</div>
+        <div class="rc">Why it works now</div>
+      </div>
+      <div class="roadmap-row">
+        <div class="num">1</div>
+        <div class="rc"><strong>Consulting</strong><span>0–6 months</span></div>
+        <div class="rc">Fixed-fee per engagement, $1.5k–$6k</div>
+        <div class="rc">Matches current skill level; funds runway and builds pattern-recognition</div>
+      </div>
+      <div class="roadmap-row">
+        <div class="num">2</div>
+        <div class="rc"><strong>Productized services</strong><span>6–12 months</span></div>
+        <div class="rc">Tiered flat-rate packages</div>
+        <div class="rc">Repeatable methodology → predictable delivery → scales past founder-led sales</div>
+      </div>
+      <div class="roadmap-row">
+        <div class="num">3</div>
+        <div class="rc"><strong>Developer tooling</strong><span>12–24 months</span></div>
+        <div class="rc">Per-seat / per-repo subscription</div>
+        <div class="rc">Converts one-time audits into recurring revenue</div>
+      </div>
+      <div class="roadmap-row">
+        <div class="num">4</div>
+        <div class="rc"><strong>Autonomous engine</strong><span>24+ months</span></div>
+        <div class="rc">Usage-based + platform subscription</div>
+        <div class="rc">Priced against verified findings, not scanner alerts</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT'S HARD ============ -->
+<section class="section-pad">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">What we won't oversell</p>
+      <h2>What's genuinely hard.</h2>
+      <p>A firm that only tells you what's easy isn't one worth trusting with your contracts.</p>
+    </div>
+
+    <ul class="hard-list" data-reveal>
+      <li><span class="mark">—</span><p>Exploit generation for novel vulnerability classes reliably — fuzzing and invariant testing are expensive and can still miss logic bugs.</p></li>
+      <li><span class="mark">—</span><p>Keeping the model from hallucinating findings or exploit correctness — this is why static analysis and reproducible tests are load-bearing, not optional.</p></li>
+      <li><span class="mark">—</span><p>A patch that compiles is not a patch that's correct — verification needs the original exploit to demonstrably fail, and the full regression suite to stay green.</p></li>
+      <li><span class="mark">—</span><p>Maintaining a real provenance chain from finding to report is more overhead than it sounds — and it's the difference between a credible report and a plausible-looking one.</p></li>
+      <li><span class="mark">—</span><p>PQC migration guidance requires real protocol-compatibility and performance modeling, not just algorithm swaps — the slowest capability to build well.</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta-band" id="contact">
+  <div class="wrap" data-reveal>
+    <p class="eyebrow" style="justify-content:center;">Get started</p>
+    <h2>Get a scoped review before your next merge or migration.</h2>
+    <p>Tell us what you're shipping — a Solidity repo, an AI-assisted codebase, or a system that needs to survive a post-quantum world.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="mailto:hello@geekmonster.dev">Email hello@geekmonster.dev</a>
+      <a class="btn btn-ghost" href="#top">Back to top</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-inner">
+    <a class="brand" href="#top">
+      <svg viewBox="44 15 176 222" xmlns="http://www.w3.org/2000/svg">
+        <path fill="url(#navGrad)" d="M 131.25 30 L 208.5 54 L 208.5 114 C 208.5 174 172.5 207 131.25 226.5 C 90 207 54 174 54 114 L 54 54 Z"/>
+      </svg>
+      <span class="brand-name">GeekMonster</span>
+    </a>
+    <p class="fine">© 2026 GeekMonster · Atlanta, GA · AI-native security engineering</p>
+  </div>
+</footer>
+
+<script>
+  // nav shadow on scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 8);
+  }, { passive: true });
+
+  // reveal-on-scroll
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
+  } else {
+    document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('in'));
+  }
+</script>
+
+</body>
+</html>
