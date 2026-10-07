@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeekMonster — Free Repo Scan</title>
+<style>
+  :root{
+    --violet:#a78bfa; --green:#4ade80; --dark:#0a0713;
+    --purple:#4A2E8F; --lavender:#EFEAFB;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; background:var(--dark); color:var(--lavender);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:48px 20px;
+  }
+  .wrap{max-width:720px; width:100%}
+  h1{
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    font-size:28px; margin:0 0 8px;
+    background:linear-gradient(90deg,var(--violet),var(--green));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  p.sub{color:#b7aed8; margin:0 0 28px; font-size:14.5px; line-height:1.5}
+  form{display:flex; gap:10px; margin-bottom:8px}
+  input[type=text]{
+    flex:1; padding:13px 14px; border-radius:10px; border:1px solid #352a55;
+    background:#150f24; color:#fff; font-size:14px; outline:none;
+  }
+  input[type=text]:focus{border-color:var(--violet)}
+  button{
+    padding:13px 22px; border-radius:10px; border:none; cursor:pointer;
+    background:linear-gradient(90deg,var(--violet),var(--green));
+    color:#0a0713; font-weight:700; font-size:14px; white-space:nowrap;
+  }
+  button:disabled{opacity:.5; cursor:not-allowed}
+  .note{font-size:12px; color:#8a7fab; margin:0 0 30px}
+  .status{font-size:13.5px; color:#cbbfee; min-height:20px; margin-bottom:18px}
+  .card{
+    background:#120c20; border:1px solid #2a2040; border-radius:12px;
+    padding:18px 20px; margin-bottom:14px;
+  }
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px}
+  .card-head h3{margin:0; font-size:15px; font-family:'IBM Plex Mono', monospace; color:#fff}
+  .sev{
+    font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; white-space:nowrap;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  .sev.Critical{background:#b91c1c} .sev.High{background:#c2410c}
+  .sev.Medium{background:#a16207} .sev.Low{background:#15803d} .sev.Info{background:var(--purple)}
+  .meta{font-size:12px; color:#9a8fc0; margin-bottom:8px}
+  .reason{font-size:13.5px; line-height:1.55; color:#ddd5f5}
+  .hyp{
+    margin-top:10px; font-size:12.5px; font-family:'IBM Plex Mono', monospace;
+    color:#b7f0c6; background:#0c1710; border-left:2px solid var(--green);
+    padding:8px 10px; border-radius:4px;
+  }
+  .cta{
+    margin-top:36px; padding:22px; border-radius:12px; text-align:center;
+    background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(74,222,128,.08));
+    border:1px solid #352a55;
+  }
+  .cta h4{margin:0 0 6px; color:#fff; font-size:16px}
+  .cta p{margin:0 0 14px; font-size:13px; color:#b7aed8}
+  .cta a{
+    display:inline-block; padding:10px 20px; border-radius:8px; text-decoration:none;
+    background:var(--green); color:#0a0713; font-weight:700; font-size:13.5px;
+  }
+  .disclaimer{font-size:11.5px; color:#6e6390; margin-top:28px; line-height:1.5}
+  .err{color:#f87171; font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Free Repo Scan</h1>
+  <p class="sub">Paste a public GitHub repo. We read up to 8 likely source files and ask Claude to flag candidate vulnerabilities — no code is cloned or executed.</p>
+
+  <form id="scanForm">
+    <input type="text" id="repoUrl" placeholder="https://github.com/owner/repo" required>
+    <button type="submit" id="go">Scan</button>
+  </form>
+  <p class="note">Public repos only · ~8 files · results are unverified AI candidates, not proof of exploitability.</p>
+
+  <div class="status" id="status"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+const FUNCTION_URL = "/.netlify/functions/scan-repo";
+
+const form = document.getElementById("scanForm");
+const btn = document.getElementById("go");
+const statusEl = document.getElementById("status");
+const results = document.getElementById("results");
+
+function sevClass(s){ return ["Critical","High","Medium","Low","Info"].includes(s) ? s : "Info"; }
+
+function renderCTA(repo){
+  return `<div class="cta">
+    <h4>Want these verified?</h4>
+    <p>AI candidates aren't proof. GeekMonster reproduces the real ones by hand, with evidence, a fix, and a retest — for ${repo}.</p>
+    <a href="mailto:hello@geekmonster.dev?subject=Verify findings for ${encodeURIComponent(repo)}">Request a verified report</a>
+  </div>`;
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const repoUrl = document.getElementById("repoUrl").value.trim();
+  results.innerHTML = "";
+  statusEl.textContent = "Scanning — this can take 20-60 seconds...";
+  statusEl.classList.remove("err");
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repoUrl }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      statusEl.textContent = data.error || "Scan failed.";
+      statusEl.classList.add("err");
+      return;
+    }
+
+    statusEl.textContent = `Scanned ${data.filesScanned.length} file(s) in ${data.repo} — ${data.candidateCount} candidate(s) found.`;
+
+    if (!data.candidateCount) {
+      results.innerHTML = "<p style='color:#9a8fc0;font-size:13.5px'>No candidates surfaced in the files checked. That's not a clean bill of health — it just means this quick pass didn't flag anything.</p>";
+    } else {
+      results.innerHTML = data.candidates.map(c => `
+        <div class="card">
+          <div class="card-head">
+            <h3>${c.id || ""} ${escapeHtml(c.finding || "Potential issue")}</h3>
+            <span class="sev ${sevClass(c.severity_guess)}">${c.severity_guess || "Info"}</span>
+          </div>
+          <div class="meta">${escapeHtml(c.file)} : line ${c.line ?? "?"} &middot; confidence ${(c.confidence ?? 0).toFixed(2)}</div>
+          <div class="reason">${escapeHtml(c.reason || "")}</div>
+          ${c.hypothesis ? `<div class="hyp">${escapeHtml(c.hypothesis)}</div>` : ""}
+        </div>
+      `).join("");
+      results.innerHTML += renderCTA(data.repo);
+    }
+
+    results.innerHTML += `<p class="disclaimer">${escapeHtml(data.disclaimer || "")}</p>`;
+  } catch (err) {
+    statusEl.textContent = "Network error — try again.";
+    statusEl.classList.add("err");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.innerText = s ?? "";
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
